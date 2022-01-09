@@ -45,7 +45,7 @@ public struct ActivityRing<Content>: View where Content: View {
         progress: Binding<Double>,
         radius: Binding<Double> = .constant(30),
         thickness: Binding<Double> = .constant(10),
-        color: Binding<Color> = .constant(.green),
+        color: Binding<Color> = .constant(.accentColor),
         tipColor: Binding<Color?> = .constant(nil),
         backgroundColor: Binding<Color?> = .constant(Color(.systemGray6)),
         tipShadowColor: Binding<Color?> = .constant(Color.black.opacity(0.3)),
@@ -159,7 +159,7 @@ extension ActivityRing where Content == EmptyView {
         progress: Binding<Double>,
         radius: Binding<Double> = .constant(30),
         thickness: Binding<Double> = .constant(10),
-        color: Binding<Color> = .constant(.green),
+        color: Binding<Color> = .constant(.accentColor),
         tipColor: Binding<Color?> = .constant(nil),
         backgroundColor: Binding<Color?> = .constant(Color(.systemGray6)),
         tipShadowColor: Binding<Color?> = .constant(Color.black.opacity(0.3)),
@@ -237,6 +237,7 @@ public struct ActivityRingPercent: View {
 #if DEBUG
 
 struct ActivityRingTest: View {
+    @State var progress: Double = 0.0
     @State var progress1: Double = 0.0
     @State var progress2: Double = 0.0
     @State var progress3: Double = 0.0
@@ -250,6 +251,13 @@ struct ActivityRingTest: View {
     var body: some View {
         VStack(spacing: 30) {
             Spacer()
+
+            ActivityRing(
+                progress: $progress
+            )
+            .onReceive(timer) { _ in
+                increment(&progress, maxProgress: 1)
+            }
 
             ActivityRing(
                 progress: $progress1,
@@ -328,15 +336,17 @@ struct ActivityRingTest: View {
         }
     }
     
-    private func increment(_ n: inout Double) {
+    private func increment(_ n: inout Double, maxProgress: Double = 2.0) {
         guard Int.random(in: 0..<10) == 0 else {
             return
         }
         
-        n += Double.random(in: 0.20 ..< 0.40)
-        if n > 2 {
+        guard n < maxProgress else {
             n = 0
+            return
         }
+        let nextN = Double.random(in: 0.20 ..< 0.40)
+        n = min(n + nextN, maxProgress)
     }
 }
 
