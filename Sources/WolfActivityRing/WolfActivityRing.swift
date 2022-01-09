@@ -30,38 +30,38 @@ extension EnvironmentValues {
 }
 
 public struct ActivityRing<Content>: View where Content: View {
-    @Binding var progress: Double
-    @Binding var radius: Double
-    @Binding var thickness: Double
-    @Binding var color: Color
-    @Binding var tipColor: Color?
-    @Binding var backgroundColor: Color?
-    @Binding var tipShadowColor: Color?
-    @Binding var outlineColor: Color?
-    @Binding var outlineThickness: Double?
+    let progress: Double
+    let radius: Double
+    let thickness: Double
+    let color: Color
+    let tipColor: Color?
+    let backgroundColor: Color?
+    let tipShadowColor: Color?
+    let outlineColor: Color?
+    let outlineThickness: Double?
     let content: Content
 
     public init(
-        progress: Binding<Double>,
-        radius: Binding<Double> = .constant(30),
-        thickness: Binding<Double> = .constant(10),
-        color: Binding<Color> = .constant(.accentColor),
-        tipColor: Binding<Color?> = .constant(nil),
-        backgroundColor: Binding<Color?> = .constant(Color(.systemGray6)),
-        tipShadowColor: Binding<Color?> = .constant(Color.black.opacity(0.3)),
-        outlineColor: Binding<Color?> = .constant(Color(.systemGray4)),
-        outlineThickness: Binding<Double?> = .constant(1),
+        progress: Double,
+        radius: Double = 30,
+        thickness: Double = 10,
+        color: Color = .accentColor,
+        tipColor: Color? = nil,
+        backgroundColor: Color? = Color(.systemGray6),
+        tipShadowColor: Color? = Color.black.opacity(0.3),
+        outlineColor: Color? = Color(.systemGray4),
+        outlineThickness: Double? = 1,
         @ViewBuilder content: () -> Content)
     {
-        self._progress = progress
-        self._radius = radius
-        self._thickness = thickness
-        self._color = color
-        self._tipColor = tipColor
-        self._backgroundColor = backgroundColor
-        self._tipShadowColor = tipShadowColor
-        self._outlineColor = outlineColor
-        self._outlineThickness = outlineThickness
+        self.progress = progress
+        self.radius = radius
+        self.thickness = thickness
+        self.color = color
+        self.tipColor = tipColor
+        self.backgroundColor = backgroundColor
+        self.tipShadowColor = tipShadowColor
+        self.outlineColor = outlineColor
+        self.outlineThickness = outlineThickness
         self.content = content()
     }
     
@@ -95,7 +95,7 @@ public struct ActivityRing<Content>: View where Content: View {
                 .frame(width: radius * 2.0)
                 .animation(.easeOut, value: progress)
             ActivityRingTip(progress: progress,
-                            ringRadius: $radius)
+                            ringRadius: radius)
                 .fill(effectiveTipColor)
                 .frame(width:thickness, height:thickness)
                 .shadow(color: effectiveTipShadowColor,
@@ -156,15 +156,15 @@ public struct ActivityRing<Content>: View where Content: View {
 
 extension ActivityRing where Content == EmptyView {
     public init(
-        progress: Binding<Double>,
-        radius: Binding<Double> = .constant(30),
-        thickness: Binding<Double> = .constant(10),
-        color: Binding<Color> = .constant(.accentColor),
-        tipColor: Binding<Color?> = .constant(nil),
-        backgroundColor: Binding<Color?> = .constant(Color(.systemGray6)),
-        tipShadowColor: Binding<Color?> = .constant(Color.black.opacity(0.3)),
-        outlineColor: Binding<Color?> = .constant(Color(.systemGray4)),
-        outlineThickness: Binding<Double?> = .constant(1)
+        progress: Double,
+        radius: Double = 30,
+        thickness: Double = 10,
+        color: Color = .accentColor,
+        tipColor: Color? = nil,
+        backgroundColor: Color? = Color(.systemGray6),
+        tipShadowColor: Color? = Color.black.opacity(0.3),
+        outlineColor: Color? = Color(.systemGray4),
+        outlineThickness: Double? = 1
     ) {
         self.init(
             progress: progress,
@@ -199,7 +199,7 @@ struct RingShape: Shape {
 
 struct ActivityRingTip: Shape {
     var progress: Double
-    @Binding var ringRadius: Double
+    let ringRadius: Double
     
     private var position: CGPoint {
         let progressAngle = Angle(degrees: (360.0 * progress) - 90.0)
@@ -253,20 +253,21 @@ struct ActivityRingTest: View {
             Spacer()
 
             ActivityRing(
-                progress: $progress
+                progress: progress,
+                tipShadowColor: .clear
             )
             .onReceive(timer) { _ in
                 increment(&progress, maxProgress: 1)
             }
 
             ActivityRing(
-                progress: $progress1,
-                radius: .constant(20),
-                thickness: .constant(5),
-                color: $color,
-                tipColor: $tipColor,
-                backgroundColor: .constant(Color.secondary.opacity(0.2)),
-                outlineColor: .constant(nil)
+                progress: progress1,
+                radius: 20,
+                thickness: 5,
+                color: color,
+                tipColor: tipColor,
+                backgroundColor: Color.secondary.opacity(0.2),
+                outlineColor: nil
             )
             .onReceive(timer) { _ in
                 increment(&progress1)
@@ -280,9 +281,9 @@ struct ActivityRingTest: View {
             }
 
             ActivityRing(
-                progress: $progress2,
-                color: .constant(.yellow),
-                tipColor: .constant(.blue)
+                progress: progress2,
+                color: .yellow,
+                tipColor: .blue
             ) {
                 ActivityRingPercent()
                     .font(Font.subheadline.bold())
@@ -293,39 +294,39 @@ struct ActivityRingTest: View {
 
             ZStack {
                 ActivityRing(
-                    progress: $progress3,
-                    radius: .constant(100),
-                    thickness: .constant(23),
-                    color: .constant(.darkRed),
-                    tipColor: .constant(.brightRed),
-                    backgroundColor: .constant(Color.brightRed.opacity(0.2)),
-                    outlineColor: .constant(nil)
+                    progress: progress3,
+                    radius: 100,
+                    thickness: 23,
+                    color: .darkRed,
+                    tipColor: .brightRed,
+                    backgroundColor: Color.brightRed.opacity(0.2),
+                    outlineColor: nil
                 )
                 .onReceive(timer) { _ in
                     increment(&progress3)
                 }
 
                 ActivityRing(
-                    progress: $progress4,
-                    radius: .constant(75),
-                    thickness: .constant(23),
-                    color: .constant(.darkGreen),
-                    tipColor: .constant(.brightGreen),
-                    backgroundColor: .constant(Color.brightGreen.opacity(0.2)),
-                    outlineColor: .constant(nil)
+                    progress: progress4,
+                    radius: 75,
+                    thickness: 23,
+                    color: .darkGreen,
+                    tipColor: .brightGreen,
+                    backgroundColor: Color.brightGreen.opacity(0.2),
+                    outlineColor: nil
                 )
                 .onReceive(timer) { _ in
                     increment(&progress4)
                 }
 
                 ActivityRing(
-                    progress: $progress5,
-                    radius: .constant(50),
-                    thickness: .constant(23),
-                    color: .constant(.darkBlue),
-                    tipColor: .constant(.brightBlue),
-                    backgroundColor: .constant(Color.brightBlue.opacity(0.2)),
-                    outlineColor: .constant(nil)
+                    progress: progress5,
+                    radius: 50,
+                    thickness: 23,
+                    color: .darkBlue,
+                    tipColor: .brightBlue,
+                    backgroundColor: Color.brightBlue.opacity(0.2),
+                    outlineColor: nil
                 )
                 .onReceive(timer) { _ in
                     increment(&progress5)
