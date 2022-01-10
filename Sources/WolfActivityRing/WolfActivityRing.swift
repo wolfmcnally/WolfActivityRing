@@ -30,14 +30,14 @@ extension EnvironmentValues {
 }
 
 public struct ActivityRingOptions {
-    var radius: Double = 30
-    var thickness: Double = 10
-    var color: Color = .accentColor
-    var tipColor: Color? = nil
-    var backgroundColor: Color = .init(.systemGray6)
-    var tipShadowColor: Color = .black.opacity(0.3)
-    var outlineColor: Color = .init(.systemGray4)
-    var outlineThickness: Double = 1
+    public var radius: Double = 30
+    public var thickness: Double = 10
+    public var color: Color = .accentColor
+    public var tipColor: Color? = nil
+    public var backgroundColor: Color = .init(.systemGray6)
+    public var tipShadowColor: Color = .black.opacity(0.3)
+    public var outlineColor: Color = .init(.systemGray4)
+    public var outlineThickness: Double = 1
     
     public init() {
     }
