@@ -29,82 +29,79 @@ extension EnvironmentValues {
     }
 }
 
+public struct ActivityRingOptions {
+    var radius: Double = 30
+    var thickness: Double = 10
+    var color: Color = .accentColor
+    var tipColor: Color? = nil
+    var backgroundColor: Color = .init(.systemGray6)
+    var tipShadowColor: Color = .black.opacity(0.3)
+    var outlineColor: Color = .init(.systemGray4)
+    var outlineThickness: Double = 1
+    
+    public init() {
+    }
+}
+
 public struct ActivityRing<Content>: View where Content: View {
     let progress: Double
-    let radius: Double
-    let thickness: Double
-    let color: Color
-    let tipColor: Color?
-    let backgroundColor: Color?
-    let tipShadowColor: Color?
-    let outlineColor: Color?
-    let outlineThickness: Double?
+    let options: ActivityRingOptions
     let content: Content
 
     public init(
         progress: Double,
-        radius: Double = 30,
-        thickness: Double = 10,
-        color: Color = .accentColor,
-        tipColor: Color? = nil,
-        backgroundColor: Color? = Color(.systemGray6),
-        tipShadowColor: Color? = Color.black.opacity(0.3),
-        outlineColor: Color? = Color(.systemGray4),
-        outlineThickness: Double? = 1,
+        options: ActivityRingOptions,
         @ViewBuilder content: () -> Content)
     {
         self.progress = progress
-        self.radius = radius
-        self.thickness = thickness
-        self.color = color
-        self.tipColor = tipColor
-        self.backgroundColor = backgroundColor
-        self.tipShadowColor = tipShadowColor
-        self.outlineColor = outlineColor
-        self.outlineThickness = outlineThickness
+        self.options = options
         self.content = content()
+    }
+    
+    private var effectiveTipColor: Color {
+        options.tipColor ?? options.color
     }
     
     public var body: some View {
         let activityAngularGradient = AngularGradient(
-            gradient: Gradient(colors: [color, effectiveTipColor]),
+            gradient: Gradient(colors: [options.color, effectiveTipColor]),
             center: .center,
             startAngle: .degrees(0),
             endAngle: .degrees(360.0 * progress))
         
         ZStack {
-            if let backgroundColor = backgroundColor {
+            if options.backgroundColor != .clear {
                 Circle()
-                    .stroke(backgroundColor, lineWidth: thickness)
-                    .frame(width: radius * 2.0)
+                    .stroke(options.backgroundColor, lineWidth: options.thickness)
+                    .frame(width: options.radius * 2.0)
             }
-            if let outlineColor = outlineColor {
+            if options.outlineColor != .clear {
                 Circle()
-                    .stroke(outlineColor, lineWidth: effectiveOutlineThickness)
-                    .frame(width:(radius * 2.0) + thickness - effectiveOutlineThickness)
+                    .stroke(options.outlineColor, lineWidth: options.outlineThickness)
+                    .frame(width:(options.radius * 2.0) + options.thickness - options.outlineThickness)
                 Circle()
-                    .stroke(outlineColor, lineWidth: effectiveOutlineThickness)
-                    .frame(width:(radius * 2.0) - thickness + effectiveOutlineThickness)
+                    .stroke(options.outlineColor, lineWidth: options.outlineThickness)
+                    .frame(width:(options.radius * 2.0) - options.thickness + options.outlineThickness)
             }
             Circle()
                 .trim(from: 0, to: self.progress)
                 .stroke(
                     activityAngularGradient,
-                    style: StrokeStyle(lineWidth: thickness, lineCap: .round))
+                    style: StrokeStyle(lineWidth: options.thickness, lineCap: .round))
                 .rotationEffect(Angle(degrees: -90))
-                .frame(width: radius * 2.0)
+                .frame(width: options.radius * 2.0)
                 .animation(.easeOut, value: progress)
-            ActivityRingTip(progress: progress,
-                            ringRadius: radius)
-                .fill(effectiveTipColor)
-                .frame(width:thickness, height:thickness)
-                .shadow(color: effectiveTipShadowColor,
+            RingCap(progress: progress,
+                            ringRadius: options.radius)
+                .fill(effectiveTipColor, strokeBorder: effectiveTipColor, lineWidth: 1) // hide seam
+                .frame(width:options.thickness, height:options.thickness)
+                .shadow(color: options.tipShadowColor,
                         radius: 2.5,
                         x: ringTipShadowOffset.x,
                         y: ringTipShadowOffset.y
                 )
                 .clipShape(
-                    RingShape(radius: radius, thickness: thickness)
+                    RingClipShape(radius: options.radius, thickness: options.thickness)
                 )
                 .opacity(tipOpacity)
                 .animation(.easeOut, value: progress)
@@ -116,15 +113,7 @@ public struct ActivityRing<Content>: View where Content: View {
     }
     
     private var size: Double {
-        return radius * 2 + thickness
-    }
-    
-    private var effectiveTipColor: Color {
-        tipColor ?? color
-    }
-    
-    private var effectiveOutlineThickness: Double {
-        outlineThickness ?? 1
+        return options.radius * 2 + options.thickness
     }
     
     private var tipOpacity: Double {
@@ -135,18 +124,14 @@ public struct ActivityRing<Content>: View where Content: View {
         }
     }
     
-    private var effectiveTipShadowColor: Color {
-        tipShadowColor ?? Color.black.opacity(0.3)
-    }
-    
     private var ringTipShadowOffset: CGPoint {
-        let ringTipPosition = tipPosition(progress: progress, radius: radius)
-        let shadowPosition = tipPosition(progress: progress + 0.0075, radius: radius)
+        let ringTipPosition = tipPosition(progress: progress, radius: options.radius)
+        let shadowPosition = tipPosition(progress: progress + 0.0075, radius: options.radius)
         return CGPoint(x: shadowPosition.x - ringTipPosition.x,
                        y: shadowPosition.y - ringTipPosition.y)
     }
     
-    private func tipPosition(progress:Double, radius:Double) -> CGPoint {
+    private func tipPosition(progress: Double, radius: Double) -> CGPoint {
         let progressAngle = Angle(degrees: (360.0 * progress) - 90.0)
         return CGPoint(
             x: radius * cos(progressAngle.radians),
@@ -154,35 +139,29 @@ public struct ActivityRing<Content>: View where Content: View {
     }
 }
 
+extension Shape {
+    func fill<Fill: ShapeStyle, Stroke: ShapeStyle>(_ fillStyle: Fill, strokeBorder strokeStyle: Stroke, lineWidth: CGFloat = 1) -> some View {
+        self
+            .stroke(strokeStyle, lineWidth: lineWidth)
+            .background(self.fill(fillStyle))
+    }
+}
+
 extension ActivityRing where Content == EmptyView {
     public init(
         progress: Double,
-        radius: Double = 30,
-        thickness: Double = 10,
-        color: Color = .accentColor,
-        tipColor: Color? = nil,
-        backgroundColor: Color? = Color(.systemGray6),
-        tipShadowColor: Color? = Color.black.opacity(0.3),
-        outlineColor: Color? = Color(.systemGray4),
-        outlineThickness: Double? = 1
+        options: ActivityRingOptions
     ) {
         self.init(
             progress: progress,
-            radius: radius,
-            thickness: thickness,
-            color: color,
-            tipColor: tipColor,
-            backgroundColor: backgroundColor,
-            tipShadowColor: tipShadowColor,
-            outlineColor: outlineColor,
-            outlineThickness: outlineThickness
+            options: options
         ) {
             EmptyView()
         }
     }
 }
 
-struct RingShape: Shape {
+struct RingClipShape: Shape {
     let radius: Double
     let thickness: Double
     
@@ -197,31 +176,31 @@ struct RingShape: Shape {
     }
 }
 
-struct ActivityRingTip: Shape {
+struct RingCap: Shape {
     var progress: Double
     let ringRadius: Double
-    
-    private var position: CGPoint {
-        let progressAngle = Angle(degrees: (360.0 * progress) - 90.0)
-        return CGPoint(
-            x: ringRadius * cos(progressAngle.radians),
-            y: ringRadius * sin(progressAngle.radians))
-    }
     
     var animatableData: Double {
         get { progress }
         set { progress = newValue }
     }
-    
+        
     func path(in rect: CGRect) -> Path {
-        var path = Path()
-        if progress > 0.0 {
-            path.addEllipse(in: CGRect(
-                                x: position.x,
-                                y: position.y,
-                                width: rect.size.width,
-                                height: rect.size.height))
+        guard progress > 0 else {
+            return Path()
         }
+
+        var path = Path()
+        let progressAngle = Angle(degrees: (360.0 * progress) - 90.0)
+        let tipRadius = rect.width / 2
+        let center = CGPoint(
+            x: ringRadius * cos(progressAngle.radians) + tipRadius,
+            y: ringRadius * sin(progressAngle.radians) + tipRadius
+        )
+        let startAngle = progressAngle + .degrees(180)
+        let endAngle = startAngle - .degrees(180)
+        path.addArc(center: center, radius: tipRadius, startAngle: startAngle, endAngle: endAngle, clockwise: true)
+        path.closeSubpath()
         return path
     }
 }
@@ -245,16 +224,78 @@ struct ActivityRingTest: View {
     @State var progress5: Double = 0.0
     let timer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
     
-    @State var color: Color = .brightGreen
-    @State var tipColor: Color? = nil
+    let ringOptions: ActivityRingOptions = {
+        var o = ActivityRingOptions()
+        o.tipShadowColor = .clear
+        return o
+    }()
     
+    var ring1Options: ActivityRingOptions {
+        var o = ActivityRingOptions()
+        o.radius = 20
+        o.thickness = 5
+        if progress1 <= 1 {
+            o.color = .brightGreen
+            o.tipColor = .brightGreen
+        } else {
+            o.color = .darkRed
+            o.tipColor = .brightRed
+        }
+        o.backgroundColor = Color.secondary.opacity(0.2)
+        o.outlineColor = .clear
+        return o
+    }
+    
+    let ring2Options: ActivityRingOptions = {
+        var o = ActivityRingOptions()
+        o.color = .yellow
+        o.tipColor = .blue
+        return o
+    }()
+    
+    let ring3Options: ActivityRingOptions = {
+        var o = ActivityRingOptions()
+        o.radius = 100
+        o.thickness = 23
+        o.color = .darkRed
+        o.tipColor = .brightRed
+        o.backgroundColor = Color.brightRed.opacity(0.2)
+        o.outlineColor = .clear
+        o.tipShadowColor = .clear
+        return o
+    }()
+    
+    let ring4Options: ActivityRingOptions = {
+        var o = ActivityRingOptions()
+        o.radius = 75
+        o.thickness = 23
+        o.color = .darkGreen
+        o.tipColor = .brightGreen
+        o.backgroundColor = Color.brightGreen.opacity(0.2)
+        o.outlineColor = .clear
+        o.tipShadowColor = .clear
+        return o
+    }()
+    
+    let ring5Options: ActivityRingOptions = {
+        var o = ActivityRingOptions()
+        o.radius = 50
+        o.thickness = 23
+        o.color = .darkBlue
+        o.tipColor = .brightBlue
+        o.backgroundColor = Color.brightBlue.opacity(0.2)
+        o.outlineColor = .clear
+        o.tipShadowColor = .clear
+        return o
+    }()
+
     var body: some View {
         VStack(spacing: 30) {
             Spacer()
 
             ActivityRing(
                 progress: progress,
-                tipShadowColor: .clear
+                options: ringOptions
             )
             .onReceive(timer) { _ in
                 increment(&progress, maxProgress: 1)
@@ -262,28 +303,15 @@ struct ActivityRingTest: View {
 
             ActivityRing(
                 progress: progress1,
-                radius: 20,
-                thickness: 5,
-                color: color,
-                tipColor: tipColor,
-                backgroundColor: Color.secondary.opacity(0.2),
-                outlineColor: nil
+                options: ring1Options
             )
             .onReceive(timer) { _ in
                 increment(&progress1)
-                if progress1 <= 1 {
-                    color = .brightGreen
-                    tipColor = nil
-                } else {
-                    color = Color(darkR * 0.1)
-                    tipColor = .brightRed
-                }
             }
 
             ActivityRing(
                 progress: progress2,
-                color: .yellow,
-                tipColor: .blue
+                options: ring2Options
             ) {
                 ActivityRingPercent()
                     .font(Font.subheadline.bold())
@@ -295,12 +323,7 @@ struct ActivityRingTest: View {
             ZStack {
                 ActivityRing(
                     progress: progress3,
-                    radius: 100,
-                    thickness: 23,
-                    color: .darkRed,
-                    tipColor: .brightRed,
-                    backgroundColor: Color.brightRed.opacity(0.2),
-                    outlineColor: nil
+                    options: ring3Options
                 )
                 .onReceive(timer) { _ in
                     increment(&progress3)
@@ -308,12 +331,7 @@ struct ActivityRingTest: View {
 
                 ActivityRing(
                     progress: progress4,
-                    radius: 75,
-                    thickness: 23,
-                    color: .darkGreen,
-                    tipColor: .brightGreen,
-                    backgroundColor: Color.brightGreen.opacity(0.2),
-                    outlineColor: nil
+                    options: ring4Options
                 )
                 .onReceive(timer) { _ in
                     increment(&progress4)
@@ -321,12 +339,7 @@ struct ActivityRingTest: View {
 
                 ActivityRing(
                     progress: progress5,
-                    radius: 50,
-                    thickness: 23,
-                    color: .darkBlue,
-                    tipColor: .brightBlue,
-                    backgroundColor: Color.brightBlue.opacity(0.2),
-                    outlineColor: nil
+                    options: ring5Options
                 )
                 .onReceive(timer) { _ in
                     increment(&progress5)
